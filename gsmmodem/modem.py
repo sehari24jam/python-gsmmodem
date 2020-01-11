@@ -186,6 +186,7 @@ class GsmModem(SerialComms):
         #Pool of detected DTMF
         self.dtmfpool = []
         self.inboxOffset = 1 # inbox offset of head SMS, for SIM800L it's offset is 11
+        self.delSmsCmd = None # for SIM800L reliable way to delete SMS is 'AT+CMGDA="DEL ALL"'
 
     def connect(self, pin=None, waitingForModemToStartInSeconds=0):
         """ Opens the port and initializes the modem and SIM card
@@ -1501,7 +1502,10 @@ class GsmModem(SerialComms):
         """
         if 0 < delFlag <= 4:
             self._setSmsMemory(readDelete=memory)
-            self.write('AT+CMGD={0},{1}'.format(self.inboxOffset, delFlag))
+            if self.delSmsCmd:
+	        self.write(self.delSmsCmd)
+            else:
+                self.write('AT+CMGD={0},{1}'.format(self.inboxOffset, delFlag))
         else:
             raise ValueError('"delFlag" must be in range [1,4]')
 
