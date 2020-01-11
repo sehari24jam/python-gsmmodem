@@ -185,6 +185,7 @@ class GsmModem(SerialComms):
         self._commands = None # List of supported AT commands
         #Pool of detected DTMF
         self.dtmfpool = []
+        self.inboxOffset = 1 # inbox offset of head SMS, for SIM800L it's offset is 11
 
     def connect(self, pin=None, waitingForModemToStartInSeconds=0):
         """ Opens the port and initializes the modem and SIM card
@@ -729,8 +730,8 @@ class GsmModem(SerialComms):
         """ Compiles regular expression used for parsing SMS messages based on current mode """
         if self.smsTextMode:
             if self.CMGR_SM_DELIVER_REGEX_TEXT == None:
-                self.CMGR_SM_DELIVER_REGEX_TEXT = re.compile('^\+CMGR: "([^"]+)","([^"]+)",[^,]*,"([^"]+)"$')
-                self.CMGR_SM_REPORT_REGEXT_TEXT = re.compile('^\+CMGR: ([^,]*),\d+,(\d+),"{0,1}([^"]*)"{0,1},\d*,"([^"]+)","([^"]+)",(\d+)$')
+                self.CMGR_SM_DELIVER_REGEX_TEXT = re.compile('^\+CMGR: "([^"]+)","([^"]+)",[^,]*,"([^"]+)".*$')
+                self.CMGR_SM_REPORT_REGEXT_TEXT = re.compile('^\+CMGR: ([^,]*),\d+,(\d+),"{0,1}([^"]*)"{0,1},\d*,"([^"]+)","([^"]+)",(\d+).*$')
         elif self.CMGR_REGEX_PDU == None:
             self.CMGR_REGEX_PDU = re.compile('^\+CMGR:\s*(\d*),\s*"{0,1}([^"]*)"{0,1},\s*(\d+)$')
 
@@ -1500,7 +1501,7 @@ class GsmModem(SerialComms):
         """
         if 0 < delFlag <= 4:
             self._setSmsMemory(readDelete=memory)
-            self.write('AT+CMGD=1,{0}'.format(delFlag))
+            self.write('AT+CMGD={0},{1}'.format(self.inboxOffset, delFlag))
         else:
             raise ValueError('"delFlag" must be in range [1,4]')
 
